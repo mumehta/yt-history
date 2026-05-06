@@ -15,6 +15,18 @@ Local Python CLI tool to process Google Takeout YouTube watch history ZIP files,
 
 Google Takeout is an official export path and avoids browser automation/scraping of My Activity.
 
+## Get the Google Takeout ZIP
+
+1. Go to [Google Takeout](https://takeout.google.com/).
+2. Click `Deselect all`.
+3. Select `YouTube and YouTube Music`.
+4. Keep `history` included in the YouTube export options.
+5. Choose `.zip` as the export file type and create the export.
+6. Download the generated Takeout ZIP when Google emails you that it is ready.
+7. Place the ZIP file directly under `takeout_zips/`.
+
+Do not unzip the archive. The parser reads `takeout_zips/*.zip` directly, so files such as `takeout-20260506T000000Z-001.zip` can stay as downloaded.
+
 ## Expected ZIP structure
 
 Primary path:
