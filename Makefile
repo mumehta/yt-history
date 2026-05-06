@@ -1,4 +1,7 @@
-.PHONY: help install parse enrich export all summary test clean clean-output
+.PHONY: help install parse enrich export all summary topic test clean clean-output
+
+TOPIC ?=
+TOPIC_FORMAT ?= lines
 
 help: ## Show available targets and descriptions.
 	@echo "Available targets:"
@@ -8,6 +11,7 @@ help: ## Show available targets and descriptions.
 	@echo "  export        Export UTF-8 BOM CSV from SQLite"
 	@echo "  all           Run parse, enrich, then export"
 	@echo "  summary       Print a database summary"
+	@echo "  topic         List topic-matched video links (TOPIC=ai,python; TOPIC_FORMAT=lines|row)"
 	@echo "  test          Run pytest"
 	@echo "  clean         Remove temporary files under temp/"
 	@echo "  clean-output  Remove generated SQLite and CSV files under output/"
@@ -29,6 +33,9 @@ all: ## Run parse, enrich, and export.
 
 summary: ## Print database summary.
 	uv run python youtube_history_pipeline.py summary
+
+topic: ## List topic-matched links. Usage: make topic TOPIC=ai,python [TOPIC_FORMAT=lines|row]
+	uv run python youtube_history_pipeline.py topic --topics "$(TOPIC)" --format "$(TOPIC_FORMAT)"
 
 test: ## Run pytest.
 	uv run pytest

@@ -2,6 +2,7 @@
 
 output/*.sqlite
 output/*.csv
+output/*.xlsx
 temp/*
 takeout_zips/*
 
@@ -12,3 +13,4 @@ takeout_zips/*
 __pycache__/
 .pytest_cache/
 .venv/
+.codex/

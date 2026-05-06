@@ -418,6 +418,28 @@ def command_summary(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_topic(args: argparse.Namespace) -> int:
+    database_path = Path(args.database)
+    topics = parse_topics(args.topics)
+    if not topics:
+        print("No valid topics provided. Example: --topics ai,python")
+        return 1
+
+    with open_database(database_path) as conn:
+        init_db(conn)
+        links = fetch_topic_links(conn, topics)
+
+    if not links:
+        return 0
+
+    if args.format == "row":
+        print(",".join(links))
+    else:
+        for link in links:
+            print(link)
+    return 0
+
+
 def command_all(args: argparse.Namespace) -> int:
     parse_result = command_parse(args)
     if parse_result != 0:
@@ -464,6 +486,23 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
     summary_parser = subparsers.add_parser("summary", help="Print database summary.")
     summary_parser.set_defaults(func=command_summary)
+
+    topic_parser = subparsers.add_parser(
+        "topic",
+        help="List watched video links matching topic keyword(s).",
+    )
+    topic_parser.add_argument(
+        "--topics",
+        required=True,
+        help="Comma-separated topic keywords. Example: ai,python",
+    )
+    topic_parser.add_argument(
+        "--format",
+        choices=["lines", "row"],
+        default="lines",
+        help="Output format: lines (one link per line) or row (comma-separated one row).",
+    )
+    topic_parser.set_defaults(func=command_topic)
 
     return parser
 
@@ -707,6 +746,44 @@ def fetch_summary_counts(conn: sqlite3.Connection) -> dict[str, int]:
     }
 
 
+def fetch_topic_links(conn: sqlite3.Connection, topics: Sequence[str]) -> list[str]:
+    values_clause = ", ".join(["(?, ?)"] * len(topics))
+    params: list[str] = []
+    for topic in topics:
+        params.extend([topic, topic.lower()])
+
+    query = f"""
+    WITH topics(topic, needle) AS (
+        VALUES {values_clause}
+    ),
+    video_text AS (
+        SELECT
+            w.video_id,
+            lower(
+                coalesce(max(w.title_from_history), '') || ' ' ||
+                coalesce(max(w.channel_from_history), '') || ' ' ||
+                coalesce(m.youtube_title, '') || ' ' ||
+                coalesce(m.youtube_description, '') || ' ' ||
+                coalesce(m.youtube_tags, '')
+            ) AS txt
+        FROM watch_history w
+        LEFT JOIN video_metadata m ON m.video_id = w.video_id
+        GROUP BY w.video_id
+    ),
+    matched AS (
+        SELECT t.topic, vt.video_id
+        FROM topics t
+        JOIN video_text vt ON instr(vt.txt, t.needle) > 0
+    )
+    SELECT matched.topic, matched.video_id
+    FROM matched
+    ORDER BY matched.topic, matched.video_id
+    """
+
+    rows = conn.execute(query, params).fetchall()
+    return [f"https://www.youtube.com/watch?v={row['video_id']}" for row in rows]
+
+
 def chunked(items: Sequence[str], size: int) -> Iterable[list[str]]:
     for index in range(0, len(items), size):
         yield list(items[index : index + size])
@@ -814,6 +891,19 @@ def _to_int_or_none(value: object) -> int | None:
         except ValueError:
             return None
     return None
+
+
+def parse_topics(raw_topics: str) -> list[str]:
+    values = [item.strip() for item in raw_topics.split(",")]
+    seen: set[str] = set()
+    topics: list[str] = []
+    for value in values:
+        key = value.lower()
+        if not value or key in seen:
+            continue
+        seen.add(key)
+        topics.append(value)
+    return topics
 
 
 if __name__ == "__main__":

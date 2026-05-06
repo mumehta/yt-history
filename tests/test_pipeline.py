@@ -7,9 +7,11 @@ from zipfile import ZipFile
 from youtube_history_pipeline import (
     command_export,
     command_parse,
+    command_topic,
     extract_video_id,
     find_watch_history_paths,
     parse_watch_history_html,
+    parse_topics,
 )
 
 
@@ -88,3 +90,48 @@ def test_parse_persists_rows_and_export_creates_csv(tmp_path):
         rows = list(csv.DictReader(handle))
     assert len(rows) == 2
     assert rows[0]["video_id"] == "dQw4w9WgXcQ"
+
+
+def test_topic_command_outputs_lines_and_row(tmp_path, capsys):
+    fixture_html = Path("tests/fixtures/watch-history.html").read_text(encoding="utf-8")
+    takeout_dir = tmp_path / "takeout_zips"
+    takeout_dir.mkdir()
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    db_path = output_dir / "test.sqlite"
+    csv_path = output_dir / "test.csv"
+    zip_path = takeout_dir / "sample.zip"
+
+    with ZipFile(zip_path, "w") as zip_file:
+        zip_file.writestr("Takeout/YouTube and YouTube Music/history/watch-history.html", fixture_html)
+
+    parse_args = argparse.Namespace(
+        takeout_dir=str(takeout_dir),
+        database=str(db_path),
+        csv=str(csv_path),
+    )
+    assert command_parse(parse_args) == 0
+    capsys.readouterr()
+
+    topic_lines_args = argparse.Namespace(
+        database=str(db_path),
+        topics="example,short",
+        format="lines",
+    )
+    assert command_topic(topic_lines_args) == 0
+    lines_out = capsys.readouterr().out.strip().splitlines()
+    assert len(lines_out) == 3
+    assert all(line.startswith("https://www.youtube.com/watch?v=") for line in lines_out)
+
+    topic_row_args = argparse.Namespace(
+        database=str(db_path),
+        topics="example,short",
+        format="row",
+    )
+    assert command_topic(topic_row_args) == 0
+    row_out = capsys.readouterr().out.strip()
+    assert "," in row_out
+
+
+def test_parse_topics_deduplicates_and_strips():
+    assert parse_topics(" ai ,python,AI,,python ") == ["ai", "python"]

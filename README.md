@@ -91,6 +91,7 @@ uv run python youtube_history_pipeline.py enrich
 uv run python youtube_history_pipeline.py export
 uv run python youtube_history_pipeline.py all
 uv run python youtube_history_pipeline.py summary
+uv run python youtube_history_pipeline.py topic --topics ai,python --format lines
 ```
 
 `all` runs `parse -> enrich -> export` and requires `YOUTUBE_API_KEY` for the enrich step.
@@ -105,6 +106,8 @@ make enrich
 make export
 make all
 make summary
+make topic TOPIC=ai,python TOPIC_FORMAT=lines
+make topic TOPIC=ai,python TOPIC_FORMAT=row
 make test
 make clean
 make clean-output
@@ -114,6 +117,21 @@ make clean-output
 
 - `output/youtube_history.sqlite`: parsed history and metadata tables
 - `output/youtube_history.csv`: exported combined data (UTF-8 BOM)
+
+## Open CSV in Excel
+
+For large exports, import from inside Excel instead of double-clicking the CSV file.
+
+1. Open Excel with a blank workbook.
+2. Go to `Data` -> `From Text/CSV`.
+3. Select `output/youtube_history.csv`.
+4. In import options:
+   - File origin: `65001: Unicode (UTF-8)`
+   - Delimiter: `Comma`
+   - Data type detection: `Do not detect data types`
+5. Click `Load`.
+
+If Excel still struggles with memory on very large files, import into LibreOffice Calc first and save as `.xlsx`.
 
 ## SQLite schema overview
 
