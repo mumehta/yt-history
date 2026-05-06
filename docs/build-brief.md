@@ -46,11 +46,9 @@ youtube-history-project/
   README.md
   Makefile
   .env.example
-  .env.local.example
   .gitignore
 
 Dependencies:
-- beautifulsoup4
 - requests
 - python-dotenv
 - pytest for tests
@@ -116,13 +114,10 @@ CLI commands:
 - uv run python youtube_history_pipeline.py summary
 
 Configuration:
-- Read YOUTUBE_API_KEY from .env or .env.local
-- Prefer .env.local if both exist
+- Read YOUTUBE_API_KEY from .env
 - Do not print the API key
-- Do not commit .env or .env.local
+- Do not commit .env
 - Create .env.example with the same key names but blank values:
-  YOUTUBE_API_KEY=
-- Create .env.local.example with the same key names but blank values:
   YOUTUBE_API_KEY=
 
 Required API keys:
@@ -179,7 +174,6 @@ Safety:
 - Do not print API key.
 - Add .gitignore for:
   .env
-  .env.local
   output/*.sqlite
   output/*.csv
   temp/*

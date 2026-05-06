@@ -1,0 +1,209 @@
+# YouTube History Pipeline
+
+Local Python CLI tool to process Google Takeout YouTube watch history ZIP files, enrich with YouTube Data API metadata, store results in SQLite, and export Excel-friendly CSV.
+
+## What this repo does
+
+1. Scans `takeout_zips/*.zip`
+2. Finds `watch-history.html` inside each ZIP
+3. Parses watched entries (videos + Shorts + `youtu.be`)
+4. Stores parsed rows in SQLite
+5. Enriches metadata via `videos.list` in batches of up to 50 IDs
+6. Exports combined data to CSV with UTF-8 BOM
+
+## Why Google Takeout
+
+Google Takeout is an official export path and avoids browser automation/scraping of My Activity.
+
+## Expected ZIP structure
+
+Primary path:
+
+```text
+Takeout/YouTube and YouTube Music/history/watch-history.html
+```
+
+Fallback path matching:
+
+```text
+.../history/watch-history.html
+```
+
+## Folder structure
+
+```text
+yt-history/
+  docs/
+  output/
+  takeout_zips/
+  temp/
+  tests/
+    fixtures/
+  youtube_history_pipeline.py
+  pyproject.toml
+  README.md
+  Makefile
+  .env.example
+  .gitignore
+```
+
+## Requirements
+
+- Python 3.12+
+- `uv`
+
+## Setup
+
+```bash
+uv sync
+```
+
+## Environment variables
+
+Create `.env` from `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Set:
+
+```text
+YOUTUBE_API_KEY=
+```
+
+`YOUTUBE_API_KEY` is required for `enrich` only.
+
+## How to get YouTube API key
+
+1. Open Google Cloud Console
+2. Create/select project
+3. Enable **YouTube Data API v3**
+4. Create credentials -> API key
+5. Restrict key to **YouTube Data API v3**
+6. Save in `.env`
+
+## CLI commands
+
+```bash
+uv run python youtube_history_pipeline.py parse
+uv run python youtube_history_pipeline.py enrich
+uv run python youtube_history_pipeline.py export
+uv run python youtube_history_pipeline.py all
+uv run python youtube_history_pipeline.py summary
+```
+
+`all` runs `parse -> enrich -> export` and requires `YOUTUBE_API_KEY` for the enrich step.
+
+## Makefile commands
+
+```bash
+make help
+make install
+make parse
+make enrich
+make export
+make all
+make summary
+make test
+make clean
+make clean-output
+```
+
+## Output files
+
+- `output/youtube_history.sqlite`: parsed history and metadata tables
+- `output/youtube_history.csv`: exported combined data (UTF-8 BOM)
+
+## SQLite schema overview
+
+`watch_history`:
+- watched_at
+- title_from_history
+- channel_from_history
+- url
+- video_id
+- is_short_url
+- source_takeout_file
+- raw_text
+
+`video_metadata`:
+- video_id
+- youtube_title
+- youtube_description
+- youtube_channel
+- youtube_published_at
+- youtube_duration
+- youtube_tags (JSON array string when present)
+- youtube_category_id
+- youtube_view_count
+- youtube_like_count
+- metadata_status
+- metadata_updated_at
+
+## CSV columns
+
+```text
+watched_at
+title_from_history
+channel_from_history
+url
+video_id
+is_short_url
+source_takeout_file
+youtube_title
+youtube_description
+youtube_channel
+youtube_published_at
+youtube_duration
+youtube_tags
+youtube_category_id
+youtube_view_count
+youtube_like_count
+metadata_status
+metadata_updated_at
+```
+
+## How metadata enrichment works
+
+- Uses `videos.list` with:
+  - `part=snippet,contentDetails,statistics`
+  - batches of up to 50 IDs
+- Uses direct `video_id` lookup from parsed history
+- Missing IDs from API response are marked:
+  - `metadata_status=unavailable_or_private_or_deleted`
+
+## Why `videos.list` and not `search.list`
+
+History already contains exact video IDs. `videos.list` is deterministic and avoids ambiguous search ranking.
+
+## Known limitations
+
+- Unavailable/private/deleted videos may not return metadata
+- Takeout HTML format variations can affect `watched_at` parsing
+- `watched_at` timezone parsing is best effort from raw Takeout text
+- No AI classification
+- No transcript extraction
+
+## Troubleshooting
+
+No ZIP files found:
+- Ensure `.zip` files are under `takeout_zips/`
+
+No `watch-history.html` found:
+- Ensure archive contains YouTube history and path ends with `history/watch-history.html`
+
+Missing `YOUTUBE_API_KEY`:
+- `parse` and `export` work without key
+- `enrich` requires key in `.env`
+- `all` will stop at `enrich` without key
+
+Quota/API errors:
+- Check API enabled and quota in Google Cloud Console
+- Confirm key is restricted to YouTube Data API v3
+
+Malformed ZIP files:
+- Re-download affected Takeout ZIP
+
+Excel display issues:
+- Export uses UTF-8 BOM to improve Excel encoding detection

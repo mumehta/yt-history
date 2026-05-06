@@ -1,0 +1,14 @@
+.env
+
+output/*.sqlite
+output/*.csv
+temp/*
+takeout_zips/*
+
+!output/.gitkeep
+!temp/.gitkeep
+!takeout_zips/.gitkeep
+
+__pycache__/
+.pytest_cache/
+.venv/

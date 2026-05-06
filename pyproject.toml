@@ -1,0 +1,22 @@
+[project]
+name = "yt-history"
+version = "0.1.0"
+description = "Local CLI tools for processing Google Takeout YouTube watch history."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.4",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.uv]
+package = false
