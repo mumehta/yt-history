@@ -11,6 +11,8 @@ Local Python CLI tool to process Google Takeout YouTube watch history ZIP files,
 5. Enriches metadata via `videos.list` in batches of up to 50 IDs
 6. Exports combined data to CSV with UTF-8 BOM
 
+   <img width="2527" height="531" alt="history-csv" src="https://github.com/user-attachments/assets/66ee9473-3c2e-40c4-869e-6cd8196c943a" />
+
 ## Why Google Takeout
 
 Google Takeout is an official export path and avoids browser automation/scraping of My Activity.
